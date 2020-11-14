@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_restful import Resource, Api
 
 
@@ -23,29 +23,34 @@ class Rate(Resource):
                 return {"message": "rate source '{}' already exists".format(source_name)}, 400
 
         # todo: it's required to check for arguments before to add them
+        payload = request.get_json()
+
         # store the requested rate source and its content
         new_rate = {
             "source_name": source_name,
-            "timestamp": None,
-            "value": None
+            "timestamp": payload["timestamp"],
+            "value": float(payload["value"])
         }
         rates.append(new_rate)
         return new_rate, 201
 
     def put(self, source_name):
         # todo: parse arguments in order to include only necessary elements
+        payload = request.get_json()
+
         # verify the requested element exists
         for rate in rates:
             if rate["source_name"] == source_name:
                 # update values for rate source
-                rate["timestamp"] = "Updated_timestamp"
-                rate["value"] = "Updated_value"
+                rate["timestamp"] = payload["timestamp"]
+                rate["value"] = float(payload["value"])
                 return rate, 202
+
         # if it doesn't exist then create a new rate sources
         new_rate = {
             "source_name": source_name,
-            "timestamp": None,
-            "value": None
+            "timestamp": payload["timestamp"],
+            "value": float(payload["value"])
         }
         rates.append(new_rate)
         return new_rate, 201
