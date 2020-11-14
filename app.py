@@ -10,10 +10,27 @@ rates = list()
 # Define Resources
 class Rate(Resource):
     def get(self, source_name):
-        pass
+        # verify the requeted element exists
+        for rate in rates:
+            if rate["source_name"] == source_name:
+                return {"rate": rate}
+        return {"message": "rate source {} doesn't exist".format(source_name)}, 404
 
     def post(self, source_name):
-        pass
+        # verify the requested element exists
+        for rate in rates:
+            if rate["source_name"] == source_name:
+                return {"message": "rate source {} already exists".format(source_name)}, 400
+
+        # todo: it's required to check for arguments before to add them
+        # store the requested rate source and its content
+        new_rate = {
+            "source_name": source_name,
+            "timestamp": None,
+            "value": None
+        }
+        rates.append(new_rate)
+        return new_rate, 201
 
     def put(self, source_name):
         pass
