@@ -2,12 +2,15 @@
 
 ## Installation
 
-'''
-pip install virtualenv
+```
+pip install virtualenv 
+
 python -m virtualenv venv --python=python3.8
+
 source venv/bin/activate
+
 pip install flask-RESTful
-'''
+```
 
 ## Description
 
