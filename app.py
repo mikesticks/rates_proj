@@ -14,13 +14,13 @@ class Rate(Resource):
         for rate in rates:
             if rate["source_name"] == source_name:
                 return {"rate": rate}
-        return {"message": "rate source {} doesn't exist".format(source_name)}, 404
+        return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
     def post(self, source_name):
         # verify the requested element exists
         for rate in rates:
             if rate["source_name"] == source_name:
-                return {"message": "rate source {} already exists".format(source_name)}, 400
+                return {"message": "rate source '{}' already exists".format(source_name)}, 400
 
         # todo: it's required to check for arguments before to add them
         # store the requested rate source and its content
@@ -36,7 +36,13 @@ class Rate(Resource):
         pass
 
     def delete(self, source_name):
-        pass
+        for idx, rate in enumerate(rates):
+            if rate["source_name"] == source_name:
+                idx_to_remove = idx
+                break
+        if idx_to_remove:
+            rates.pop(idx_to_remove)
+            return {"message": "rate source '{}' deleted"}.format(source_name)
 
 
 class Rates(Resource):
