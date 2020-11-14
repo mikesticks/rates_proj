@@ -33,9 +33,25 @@ class Rate(Resource):
         return new_rate, 201
 
     def put(self, source_name):
-        pass
+        # todo: parse arguments in order to include only necessary elements
+        # verify the requested element exists
+        for rate in rates:
+            if rate["source_name"] == source_name:
+                # update values for rate source
+                rate["timestamp"] = "Updated_timestamp"
+                rate["value"] = "Updated_value"
+                return rate, 202
+        # if it doesn't exist then create a new rate sources
+        new_rate = {
+            "source_name": source_name,
+            "timestamp": None,
+            "value": None
+        }
+        rates.append(new_rate)
+        return new_rate, 201
 
     def delete(self, source_name):
+        # verify the requested element exists
         for idx, rate in enumerate(rates):
             if rate["source_name"] == source_name:
                 idx_to_remove = idx
@@ -43,6 +59,8 @@ class Rate(Resource):
         if idx_to_remove:
             rates.pop(idx_to_remove)
             return {"message": "rate source '{}' deleted"}.format(source_name)
+        else:
+            return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
 
 class Rates(Resource):
