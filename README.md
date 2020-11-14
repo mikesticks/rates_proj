@@ -1,21 +1,17 @@
-# Web service to expose current exange rate of USD to MXN
+# Web service to expose current exchange rate of USD to MXN
 
 ## Installation
 
 ```
-pip install virtualenv 
+pip install virtualenv
 
 python -m virtualenv venv --python=python3.8
 
 source venv/bin/activate
 
-pip install flask-RESTful
+pip install Flask-RESTful
 ```
 
 ## Description
 
-This web service is going to take current exange rate from three different sources and expose them into the same endpoint.
-
-
-
-
+This web service is going to take current exchange rate from three different sources and expose them into the same endpoint.
