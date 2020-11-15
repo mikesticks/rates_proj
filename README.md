@@ -10,6 +10,8 @@ python -m virtualenv venv --python=python3.8
 source venv/bin/activate
 
 pip install Flask-RESTful
+pip install bs4
+pip install requests
 ```
 
 ## Description

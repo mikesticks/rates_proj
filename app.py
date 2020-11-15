@@ -1,5 +1,7 @@
-import requests
 import json
+import requests
+
+from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Flask, request
 from flask_restful import Resource, Api
@@ -31,7 +33,7 @@ class Rate(Resource):
         # store the requested rate source and its content
         new_rate = {
             "source_name": source_name,
-            "timestamp": payload["timestamp"],
+            "last_update": payload["last_update"],
             "value": float(payload["value"])
         }
         rates.append(new_rate)
@@ -45,14 +47,14 @@ class Rate(Resource):
         for rate in rates:
             if rate["source_name"] == source_name:
                 # update values for rate source
-                rate["timestamp"] = payload["timestamp"]
+                rate["last_update"] = payload["last_update"]
                 rate["value"] = float(payload["value"])
                 return rate, 202
 
         # if it doesn't exist then create a new rate sources
         new_rate = {
             "source_name": source_name,
-            "timestamp": payload["timestamp"],
+            "last_update": payload["last_update"],
             "value": float(payload["value"])
         }
         rates.append(new_rate)
@@ -84,7 +86,7 @@ class Rates(Resource):
             payload = {"access_key": "059b15fd0d1497de7413112acba27991", "base": "EUR", "symbols": "MXN,USD"}
             request = requests.get("http://data.fixer.io/api/{}".format(endpoint), params=payload)
             result = json.loads(request.text)
-            value = round((result["rates"]["MXN"] / result["rates"]["USD"]), 2)
+            value = round((result["rates"]["MXN"] / result["rates"]["USD"]), 4)
             return value, result["date"]
 
         def get_exchange_rate_banxico():
@@ -96,21 +98,33 @@ class Rates(Resource):
             result = json.loads(request.text)
             result = result["bmx"]["series"][0]["datos"][0]
             date = str(datetime.strptime(result["fecha"], "%d/%m/%Y").date())
-            return round(float(result["dato"]), 2), date
+            return round(float(result["dato"]), 4), date
 
         def get_exchange_rate_dof():
-            pass
+            request = requests.get("https://www.dof.gob.mx/indicadores_detalle.php?cod_tipo_indicador=158&dfecha=11%2F11%2F2020&hfecha=11%2F11%2F2020")
+            soup = BeautifulSoup(request.content, "html.parser")
+            results = soup.find_all("table", class_="Tabla_borde")
+
+            value = None
+            date = None
+            for result in results:
+                if hasattr(result, "contents"):
+                    date, value = result.contents[3].text[1:-1].split("\n")
+            if value:
+                return round(float(value), 4), str(datetime.strptime(date, "%d-%m-%Y").date())
+            else:
+                return None, None
 
         default_rates = [
             ("fixer", get_exchange_rate_fixer),
             ("banxico", get_exchange_rate_banxico),
-            # ("diario_oficial_federacion", get_exchange_rate_dof)
+            ("diario_oficial_federacion", get_exchange_rate_dof)
         ]
         for default_rate in default_rates:
             value, date = default_rate[1]()
             new_rate = {
                 "source_name": default_rate[0],
-                "timestamp": date,
+                "last_update": date,
                 "value": value
             }
             rates.append(new_rate)
