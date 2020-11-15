@@ -6,7 +6,8 @@ from datetime import date, datetime, timedelta
 from flask import Flask, request
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
-from werkzeug.security import safe_str_cmp
+
+from user import validate_credentials
 
 app = Flask(__name__)
 api = Api(app)
@@ -22,17 +23,21 @@ rates = list()
 
 # Define Resources
 class Auth(Resource):
-    """
-    Function to authenticate.
-    This function will validate the passed user is currently available and passwords match.
-    Then it will create an access token for that user.
-
-    :return: an access token if valid user and psw otherwise an error message
-    """
     def post(self):
+        """
+        Function to authenticate.
+        This function will validate the passed user is currently available and passwords match.
+        Then it will create an access token for that user.
+
+        :return: an access token if valid user and psw otherwise an error message
+        """
         payload = request.get_json()
-        access_token = create_access_token(identity=payload["username"])
-        return access_token
+        validated_user = validate_credentials(payload["username"], payload["password"])
+        if validated_user:
+            access_token = create_access_token(identity=payload["username"])
+            return access_token
+        else:
+            return {"message": "credentials for '{}' user are invalid".format(payload["username"])}, 401
 
 
 class Rate(Resource):
