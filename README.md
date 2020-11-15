@@ -13,6 +13,7 @@ source venv/bin/activate
 
 pip install Flask-RESTful
 pip install flask-jwt-extended
+pip install Flask-Limiter
 pip install bs4
 pip install requests
 ```
@@ -43,3 +44,5 @@ and pass a *username* and a *password* in `Content-Type header: Application/json
 ```
 
 2. Pass the returned access token value as the `Authorization header: Bearer <access_token>`
+
+**NOTE:** Current reta limit is set to 200 request per day or 50 request per hour

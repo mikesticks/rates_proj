@@ -6,6 +6,8 @@ from datetime import date, datetime, timedelta
 from flask import Flask, request
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from user import validate_credentials
 
@@ -16,6 +18,13 @@ api = Api(app)
 # then we can pass it to those APIs which require a token
 app.config['JWT_SECRET_KEY'] = "-oWjL,Vbp4$"
 jwt = JWTManager(app)
+
+# set rate limits for all routes
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # this list allows us to store rates data for this application: a local "DB"
 rates = list()
