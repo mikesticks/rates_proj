@@ -2,19 +2,26 @@ import json
 import requests
 
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from flask import Flask, request
 from flask_restful import Resource, Api
-
 
 app = Flask(__name__)
 api = Api(app)
 
+# this list allows us to store rates data for this application: a local "DB"
 rates = list()
 
 # Define Resources
 class Rate(Resource):
     def get(self, source_name):
+        """
+        Function to retrieve a rate object
+
+        :param username: name of the rate source to retrieve
+        :return: a rate object if exist; a Not Found error if it doesn't
+        """
+
         # verify the requeted element exists
         for rate in rates:
             if rate["source_name"] == source_name:
@@ -22,6 +29,13 @@ class Rate(Resource):
         return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
     def post(self, source_name):
+        """
+        Function to store a new rate object
+
+        :param username: name of the rate source to store
+        :return: a rate object if doesn't exist; a Bad Request error if it does
+        """
+
         # verify the requested element exists
         for rate in rates:
             if rate["source_name"] == source_name:
@@ -40,6 +54,14 @@ class Rate(Resource):
         return new_rate, 201
 
     def put(self, source_name):
+        """
+        Function to store a new rate object if it doesn't exist or
+        update one already created
+
+        :param username: name of the rate source to store/update
+        :return: a rate object with an accepted or created code
+        """
+
         # todo: parse arguments in order to include only necessary elements
         payload = request.get_json()
 
@@ -61,6 +83,14 @@ class Rate(Resource):
         return new_rate, 201
 
     def delete(self, source_name):
+        """
+        Function delete an object if it exists
+
+        :param username: name of the rate source to delete
+        :return: a possitive message if was possible delete it or
+                 a Not Found error if it wasn't
+        """
+
         # verify the requested element exists
         idx_to_remove = None
         for idx, rate in enumerate(rates):
@@ -76,12 +106,31 @@ class Rate(Resource):
 
 class Rates(Resource):
     def get(self):
+        """
+        Function to retrieve the complete list of rates
+
+        :return: a rates object
+        """
+
         return {"rates": rates}
 
     def post(self):
+        """
+        Function to generate default rate objects from 3 different sources:
+        Fixer, Banxico and Diario Oficial de la Federación.
+
+        :return: a rates object
+        """
+
         global rates
         rates = []
         def get_exchange_rate_fixer():
+            """
+            Function which retrieve current exchange rate from http://data.fixer.io
+
+            :return: tuple of (a_float_rate, a_date_string)
+            """
+
             endpoint = "latest"
             payload = {"access_key": "059b15fd0d1497de7413112acba27991", "base": "EUR", "symbols": "MXN,USD"}
             request = requests.get("http://data.fixer.io/api/{}".format(endpoint), params=payload)
@@ -90,6 +139,12 @@ class Rates(Resource):
             return value, result["date"]
 
         def get_exchange_rate_banxico():
+            """
+            Function which retrieve current exchange rate from https://www.banxico.org.mx
+
+            :return: tuple of (a_float_rate, a_date_string)
+            """
+
             endpoint = "series/SF43718/datos/oportuno"
             payload = {"mediaType": "json",
                        "token": "88fc2150f9717d4a6c16f4d531a5675b5df6a16b7770678f08431b8e35d06a02"}
@@ -97,10 +152,16 @@ class Rates(Resource):
                                    params=payload)
             result = json.loads(request.text)
             result = result["bmx"]["series"][0]["datos"][0]
-            date = str(datetime.strptime(result["fecha"], "%d/%m/%Y").date())
-            return round(float(result["dato"]), 4), date
+            last_update = str(datetime.strptime(result["fecha"], "%d/%m/%Y").date())
+            return round(float(result["dato"]), 4), last_update
 
         def get_exchange_rate_dof():
+            """
+            Function which retrieve current exchange rate from https://www.dof.gob.mx
+
+            :return: tuple of (a_float_rate, a_date_string)
+            """
+
             url = "https://www.dof.gob.mx"
             endpoint = "/indicadores_detalle.php"
 
@@ -127,10 +188,10 @@ class Rates(Resource):
             ("diario_oficial_federacion", get_exchange_rate_dof)
         ]
         for default_rate in default_rates:
-            value, date = default_rate[1]()
+            value, last_update = default_rate[1]()
             new_rate = {
                 "source_name": default_rate[0],
-                "last_update": date,
+                "last_update": last_update,
                 "value": value
             }
             rates.append(new_rate)
