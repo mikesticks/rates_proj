@@ -5,20 +5,43 @@ from bs4 import BeautifulSoup
 from datetime import date, datetime, timedelta
 from flask import Flask, request
 from flask_restful import Resource, Api
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from werkzeug.security import safe_str_cmp
 
 app = Flask(__name__)
 api = Api(app)
 
+# create a JWT object which allows us to encrypt user names
+# then we can pass it to those APIs which require a token
+app.config['JWT_SECRET_KEY'] = "-oWjL,Vbp4$"
+jwt = JWTManager(app)
+
 # this list allows us to store rates data for this application: a local "DB"
 rates = list()
 
+
 # Define Resources
+class Auth(Resource):
+    """
+    Function to authenticate.
+    This function will validate the passed user is currently available and passwords match.
+    Then it will create an access token for that user.
+
+    :return: an access token if valid user and psw otherwise an error message
+    """
+    def post(self):
+        payload = request.get_json()
+        access_token = create_access_token(identity=payload["username"])
+        return access_token
+
+
 class Rate(Resource):
+    @jwt_required
     def get(self, source_name):
         """
         Function to retrieve a rate object
 
-        :param username: name of the rate source to retrieve
+        :param source_name: name of the rate source to retrieve
         :return: a rate object if exist; a Not Found error if it doesn't
         """
 
@@ -28,11 +51,12 @@ class Rate(Resource):
                 return {"rate": rate}
         return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
+    @jwt_required
     def post(self, source_name):
         """
         Function to store a new rate object
 
-        :param username: name of the rate source to store
+        :param source_name: name of the rate source to store
         :return: a rate object if doesn't exist; a Bad Request error if it does
         """
 
@@ -53,12 +77,13 @@ class Rate(Resource):
         rates.append(new_rate)
         return new_rate, 201
 
+    @jwt_required
     def put(self, source_name):
         """
         Function to store a new rate object if it doesn't exist or
         update one already created
 
-        :param username: name of the rate source to store/update
+        :param source_name: name of the rate source to store/update
         :return: a rate object with an accepted or created code
         """
 
@@ -82,12 +107,13 @@ class Rate(Resource):
         rates.append(new_rate)
         return new_rate, 201
 
+    @jwt_required
     def delete(self, source_name):
         """
         Function delete an object if it exists
 
-        :param username: name of the rate source to delete
-        :return: a possitive message if was possible delete it or
+        :param source_name: name of the rate source to delete
+        :return: a positive message if was possible delete it or
                  a Not Found error if it wasn't
         """
 
@@ -105,6 +131,7 @@ class Rate(Resource):
 
 
 class Rates(Resource):
+    @jwt_required
     def get(self):
         """
         Function to retrieve the complete list of rates
@@ -114,6 +141,7 @@ class Rates(Resource):
 
         return {"rates": rates}
 
+    @jwt_required
     def post(self):
         """
         Function to generate default rate objects from 3 different sources:
@@ -201,6 +229,7 @@ class Rates(Resource):
 # Define Routes
 api.add_resource(Rate, "/rate/<string:source_name>")
 api.add_resource(Rates, "/rates")
+api.add_resource(Auth, "/auth")
 
 
 if __name__ == "__main__":
