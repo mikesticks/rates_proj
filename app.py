@@ -101,19 +101,25 @@ class Rates(Resource):
             return round(float(result["dato"]), 4), date
 
         def get_exchange_rate_dof():
-            request = requests.get("https://www.dof.gob.mx/indicadores_detalle.php?cod_tipo_indicador=158&dfecha=11%2F11%2F2020&hfecha=11%2F11%2F2020")
-            soup = BeautifulSoup(request.content, "html.parser")
-            results = soup.find_all("table", class_="Tabla_borde")
+            url = "https://www.dof.gob.mx"
+            endpoint = "/indicadores_detalle.php"
 
-            value = None
-            date = None
-            for result in results:
-                if hasattr(result, "contents"):
-                    date, value = result.contents[3].text[1:-1].split("\n")
-            if value:
-                return round(float(value), 4), str(datetime.strptime(date, "%d-%m-%Y").date())
-            else:
-                return None, None
+            for i in range(3):
+                req_date = date.today() - timedelta(days=i)
+                payload = "cod_tipo_indicador=158&dfecha={0}%2F{1}%2F{2}&hfecha={0}%2F{1}%2F{2}".format(req_date.day,
+                                                                                                        req_date.month,
+                                                                                                        req_date.year)
+                request = requests.get("{}{}".format(url, endpoint), params=payload)
+                soup = BeautifulSoup(request.content, "html.parser")
+                results = soup.find_all("table", class_="Tabla_borde")
+                for result in results:
+                    if hasattr(result, "contents"):
+                        if len(result.contents) > 3:
+                            last_update, value = result.contents[3].text[1:-1].split("\n")
+                            return round(float(value), 4), str(datetime.strptime(last_update, "%d-%m-%Y").date())
+                        else:
+                            break
+            return None, None
 
         default_rates = [
             ("fixer", get_exchange_rate_fixer),
