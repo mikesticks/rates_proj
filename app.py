@@ -1,5 +1,6 @@
 import requests
 import json
+from datetime import datetime
 from flask import Flask, request
 from flask_restful import Resource, Api
 
@@ -59,13 +60,14 @@ class Rate(Resource):
 
     def delete(self, source_name):
         # verify the requested element exists
+        idx_to_remove = None
         for idx, rate in enumerate(rates):
             if rate["source_name"] == source_name:
                 idx_to_remove = idx
                 break
-        if idx_to_remove:
+        if idx_to_remove is not None:
             rates.pop(idx_to_remove)
-            return {"message": "rate source '{}' deleted"}.format(source_name)
+            return {"message": "rate source '{}' deleted".format(source_name)}
         else:
             return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
@@ -75,6 +77,8 @@ class Rates(Resource):
         return {"rates": rates}
 
     def post(self):
+        global rates
+        rates = []
         def get_exchange_rate_fixer():
             endpoint = "latest"
             payload = {"access_key": "059b15fd0d1497de7413112acba27991", "base": "EUR", "symbols": "MXN,USD"}
@@ -84,15 +88,22 @@ class Rates(Resource):
             return value, result["date"]
 
         def get_exchange_rate_banxico():
-            # 88fc2150f9717d4a6c16f4d531a5675b5df6a16b7770678f08431b8e35d06a02
-            pass
+            endpoint = "series/SF43718/datos/oportuno"
+            payload = {"mediaType": "json",
+                       "token": "88fc2150f9717d4a6c16f4d531a5675b5df6a16b7770678f08431b8e35d06a02"}
+            request = requests.get("https://www.banxico.org.mx/SieAPIRest/service/v1/{}".format(endpoint),
+                                   params=payload)
+            result = json.loads(request.text)
+            result = result["bmx"]["series"][0]["datos"][0]
+            date = str(datetime.strptime(result["fecha"], "%d/%m/%Y").date())
+            return round(float(result["dato"]), 2), date
 
         def get_exchange_rate_dof():
             pass
 
         default_rates = [
             ("fixer", get_exchange_rate_fixer),
-            # ("banxico", get_exchange_rate_banxico),
+            ("banxico", get_exchange_rate_banxico),
             # ("diario_oficial_federacion", get_exchange_rate_dof)
         ]
         for default_rate in default_rates:
