@@ -1,3 +1,5 @@
+import requests
+import json
 from flask import Flask, request
 from flask_restful import Resource, Api
 
@@ -70,6 +72,37 @@ class Rate(Resource):
 
 class Rates(Resource):
     def get(self):
+        return {"rates": rates}
+
+    def post(self):
+        def get_exchange_rate_fixer():
+            endpoint = "latest"
+            payload = {"access_key": "059b15fd0d1497de7413112acba27991", "base": "EUR", "symbols": "MXN,USD"}
+            request = requests.get("http://data.fixer.io/api/{}".format(endpoint), params=payload)
+            result = json.loads(request.text)
+            value = round((result["rates"]["MXN"] / result["rates"]["USD"]), 2)
+            return value, result["date"]
+
+        def get_exchange_rate_banxico():
+            # 88fc2150f9717d4a6c16f4d531a5675b5df6a16b7770678f08431b8e35d06a02
+            pass
+
+        def get_exchange_rate_dof():
+            pass
+
+        default_rates = [
+            ("fixer", get_exchange_rate_fixer),
+            # ("banxico", get_exchange_rate_banxico),
+            # ("diario_oficial_federacion", get_exchange_rate_dof)
+        ]
+        for default_rate in default_rates:
+            value, date = default_rate[1]()
+            new_rate = {
+                "source_name": default_rate[0],
+                "timestamp": date,
+                "value": value
+            }
+            rates.append(new_rate)
         return {"rates": rates}
 
 
