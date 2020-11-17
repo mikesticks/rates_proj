@@ -1,0 +1,6 @@
+bs4==0.0.1
+Flask-RESTful==0.3.8
+Flask-Limiter==1.4
+Flask-RESTful==0.3.8
+requests==2.25.0
+uwsgi

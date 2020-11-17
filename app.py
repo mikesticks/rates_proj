@@ -44,7 +44,7 @@ class Auth(Resource):
         validated_user = validate_credentials(payload["username"], payload["password"])
         if validated_user:
             access_token = create_access_token(identity=payload["username"])
-            return access_token
+            return access_token, 201
         else:
             return {"message": "credentials for '{}' user are invalid".format(payload["username"])}, 401
 
@@ -62,7 +62,7 @@ class Rate(Resource):
         # verify the requeted element exists
         for rate in rates:
             if rate["source_name"] == source_name:
-                return {"rate": rate}
+                return {"rate": rate}, 200
         return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
     @jwt_required
@@ -139,7 +139,7 @@ class Rate(Resource):
                 break
         if idx_to_remove is not None:
             rates.pop(idx_to_remove)
-            return {"message": "rate source '{}' deleted".format(source_name)}
+            return {"message": "rate source '{}' deleted".format(source_name)}, 200
         else:
             return {"message": "rate source '{}' doesn't exist".format(source_name)}, 404
 
@@ -153,7 +153,7 @@ class Rates(Resource):
         :return: a rates object
         """
 
-        return {"rates": rates}
+        return {"rates": rates}, 200
 
     @jwt_required
     def post(self):
@@ -166,6 +166,7 @@ class Rates(Resource):
 
         global rates
         rates = []
+
         def get_exchange_rate_fixer():
             """
             Function which retrieve current exchange rate from http://data.fixer.io
@@ -237,7 +238,7 @@ class Rates(Resource):
                 "value": value
             }
             rates.append(new_rate)
-        return {"rates": rates}
+        return {"rates": rates}, 201
 
 
 # Define Routes
