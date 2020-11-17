@@ -246,6 +246,4 @@ api.add_resource(Rate, "/rate/<string:source_name>")
 api.add_resource(Rates, "/rates")
 api.add_resource(Auth, "/auth")
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+app.run(debug=True)
